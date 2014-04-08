@@ -34,9 +34,9 @@ An entity is automatically enabled when added, and disabled when deleted. Both s
 Component
 =========
 
-A component holds data an entity might be interested in. Since Diana stores most components inline (with other component data) only one instance of a component is normally allowed to be associated with an entity. The other types are Indexed and Multiple. Indexed allows Diana to hold data seperatly and more compact while Mutiple does pretty much the same thing but allow multiple instances of a component with the same entity. Both types can be limited, so for example only 50 "dead body" cmoponents are allowed to exist at any time.
+A component holds data an entity might be interested in. Since Diana stores most components inline (with other component data) only one instance of a component is normally allowed to be associated with an entity. The other types are Indexed and Multiple. Indexed allows Diana to hold data seperatly and more compact while Mutiple does pretty much the same thing but allow multiple instances of a component with the same entity. Both types can be limited, so for example only 50 "dead body" components are allowed to exist at any time.
 
-Diana also supports a small portion of Reactive programming, by giving a component a compute function. It will call the compute function when a component that it depends on is tagged as dirty. This allows components to delay computation and cache old results until it has a reason to change.
+Diana also supports a small portion of Reactive programming, by giving a component a compute function. It will call the compute function when a component that it depends on is tagged as dirty. This allows components to delay computation and cache old results until it has a reason to change, normally when the component is read.
 
     unsigned int diana_createComponent(
         struct diana *diana,
@@ -50,7 +50,7 @@ Diana also supports a small portion of Reactive programming, by giving a compone
 Manager
 =======
 
-A manager is a simple system. When created you can give it zero or more functions that are called when an entity changes it's status
+A manager is a simple system. When created you can give it zero or more functions that are called when an entity changes it's status.
 
     unsigned int diana_createManager(
         struct diana *diana,
@@ -83,6 +83,8 @@ A system is where most computation happens. A system watches for entities with c
     void diana_watch(struct diana *diana, unsigned int system, unsigned int component);
 
     void diana_exclude(struct diana *diana, unsigned int system, unsigned int component);
+    
+    void diana_processSystem(struct diana * diana, unsigned int system);
     
 Entity Components
 =================
