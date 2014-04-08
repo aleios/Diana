@@ -7,16 +7,20 @@ Diana is simular to Artemis, it has components, managers and systems to process 
 
 The design of Diana tries to use dependency injection and even lets you define how it allocates and frees memory.
 
-    struct diana * allocate_diana(void *(*malloc)(size_t), void (*free)(void *ptr));
+    int allocate_diana(void *(*malloc)(size_t), void (*free)(void *ptr), struct diana **);
+
+    int diana_free(struct diana *);
     
-    unsigned int diana_getError(struct diana *);
-    
-    void diana_free(struct diana *);
-    
-Initialization
-==============
+Initialization and Runtime
+==========================
 
 The Diana API is split between two modes. Un-Initialized and Initialized. The application will be spend most time in Initialized mode. The application can only create components, systems and managers in uninitialized mode. Entities can be created and modified in Initialized mode. This limitation might be lifted in the future, but that is how it works today.
+
+    int diana_initialize(struct diana *);
+
+    int diana_process(struct diana *, float delta);
+    
+    int processSystem(struct diana *, unsigned int system, float delta);
 
 Entity
 ======
@@ -25,11 +29,11 @@ Being just an integer, an entity can have 5 states (un-added, added, enabled, di
 
 An entity is automatically enabled when added, and disabled when deleted. Both signals will go through.
 
-    unsigned int diana_spawn(struct diana *);
+    int diana_spawn(struct diana *, unsigned int * entity_ptr);
     
-    unsigned int diana_clone(struct diana *, unsigned int parentEntity);
+    int diana_clone(struct diana *, unsigned int parentEntity, unsigned int * entity_ptr);
     
-    void diana_signal(struct diana *, unsigned int entity, unsigned int signal);
+    int diana_signal(struct diana *, unsigned int entity, unsigned int signal);
 
 Component
 =========
@@ -38,21 +42,22 @@ A component holds data an entity might be interested in. Since Diana stores most
 
 Diana also supports a small portion of Reactive programming, by giving a component a compute function. It will call the compute function when a component that it depends on is tagged as dirty. This allows components to delay computation and cache old results until it has a reason to change, normally when the component is read.
 
-    unsigned int diana_createComponent(
+    int diana_createComponent(
         struct diana *diana,
         const char *name,
         size_t size,
-        unsigned int flags
+        unsigned int flags,
+        unsigned int * component_ptr
     );
 
-    void diana_componentCompute(struct diana *diana, unsigned int component, void (*compute)(struct diana *, void *, unsigned int entity, unsigned int index, void *), void *userData);
+    int diana_componentCompute(struct diana *diana, unsigned int component, void (*compute)(struct diana *, void *, unsigned int entity, unsigned int index, void *), void *userData);
 
 Manager
 =======
 
 A manager is a simple system. When created you can give it zero or more functions that are called when an entity changes it's status.
 
-    unsigned int diana_createManager(
+    int diana_createManager(
         struct diana *diana,
         const char *name,
         void (*added)(struct diana *, void *, unsigned int),
@@ -60,7 +65,8 @@ A manager is a simple system. When created you can give it zero or more function
         void (*disabled)(struct diana *, void *, unsigned int),
         void (*deleted)(struct diana *, void *, unsigned int),
         void *userData,
-        unsigned int flags
+        unsigned int flags,
+        unsigned int * manager_ptr
     );
     
 System
@@ -68,7 +74,7 @@ System
 
 A system is where most computation happens. A system watches for entities with certain components, or entities without certian components, and processes them one at a time. when `diana_process` is called it will do book keeping, update managers and keep systems up to date, then it will go through each system that is not "passive" and process the entities it is interested in. "passive" systems can be processed by calling `diana_processSystem`.
 
-    unsigned int diana_createSystem(
+    int diana_createSystem(
         struct diana *diana,
         const char *name,
         void (*starting)(struct diana *, void *),
@@ -77,15 +83,14 @@ A system is where most computation happens. A system watches for entities with c
         void (*subscribed)(struct diana *, void *, unsigned int),
         void (*unsubscribed)(struct diana *, void *, unsigned int),
         void *userData,
-        unsigned int flags
+        unsigned int flags,
+        unsigned int * system_ptr
     );
 
-    void diana_watch(struct diana *diana, unsigned int system, unsigned int component);
+    int diana_watch(struct diana *diana, unsigned int system, unsigned int component);
 
-    void diana_exclude(struct diana *diana, unsigned int system, unsigned int component);
-    
-    void diana_processSystem(struct diana * diana, unsigned int system);
-    
+    int diana_exclude(struct diana *diana, unsigned int system, unsigned int component);
+
 Entity Components
 =================
 
@@ -95,22 +100,22 @@ The simple basic functions, used for inline and indexed components.
 
     void diana_setComponent(struct diana *diana, unsigned int entity, unsigned int component, const void * data);
 
-    void * diana_getComponent(struct diana *diana, unsigned int entity, unsigned int component);
+    int diana_getComponent(struct diana *diana, unsigned int entity, unsigned int component, void ** data_ptr);
 
-    void diana_removeComponent(struct diana *diana, unsigned int entity, unsigned int component);
+    int diana_removeComponent(struct diana *diana, unsigned int entity, unsigned int component);
 
 These functions allow the application to work with multiple instances of a component on an entity.
 
-    unsigned int diana_getComponentCount(struct diana *diana, unsigned int entity, unsigned int component);
+    int diana_getComponentCount(struct diana *diana, unsigned int entity, unsigned int component, unsigned int * count_ptr);
 
-    void diana_appendComponent(struct diana *diana, unsigned int entity, unsigned int component, const void * data);
+    int diana_appendComponent(struct diana *diana, unsigned int entity, unsigned int component, const void * data);
 
-    void diana_removeComponents(struct diana *diana, unsigned int entity, unsigned int component);
+    int diana_removeComponents(struct diana *diana, unsigned int entity, unsigned int component);
 
 The functions above essentially, with exception of `diana_getComponentCount`, use these internally.
 
-    void diana_setComponentI(struct diana *diana, unsigned int entity, unsigned int component, unsigned int i, const void * data);
+    int diana_setComponentI(struct diana *diana, unsigned int entity, unsigned int component, unsigned int i, const void * data);
 
-    void * diana_getComponentI(struct diana *diana, unsigned int entity, unsigned int component, unsigned int i);
+    int diana_getComponentI(struct diana *diana, unsigned int entity, unsigned int component, unsigned int i, void ** data_ptr);
 
-    void diana_removeComponentI(struct diana *diana, unsigned int entity, unsigned int component, unsigned int i);
+    int diana_removeComponentI(struct diana *diana, unsigned int entity, unsigned int component, unsigned int i);
