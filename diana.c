@@ -1124,7 +1124,6 @@ static int _removeComponentI(struct diana *diana, unsigned int entity, unsigned 
 
 int diana_clone(struct diana *diana, unsigned int parentEntity, unsigned int * entity_ptr) {
 	unsigned int newEntity, ci, cbi, cbn;
-	struct _component *c;
 	unsigned char *parentEntityData;
 	int err = DL_ERROR_NONE;
 
@@ -1147,8 +1146,6 @@ int diana_clone(struct diana *diana, unsigned int parentEntity, unsigned int * e
 		if(!_bits_isSet(parentEntityData, ci)) {
 			continue;
 		}
-
-		c = diana->components + ci;
 
 		err = diana_getComponentCount(diana, parentEntity, ci, &cbn);
 		if(err != DL_ERROR_NONE) {
@@ -1280,7 +1277,6 @@ int diana_getComponentCount(struct diana *diana, unsigned int entity, unsigned i
 }
 
 int diana_appendComponent(struct diana *diana, unsigned int entity, unsigned int component, const void * data) {
-	unsigned char *entityData;
 	struct _component *c;
 
 	if(!diana->initialized) {
@@ -1295,7 +1291,6 @@ int diana_appendComponent(struct diana *diana, unsigned int entity, unsigned int
 		return DL_ERROR_INVALID_VALUE;
 	}
 
-	entityData = _getEntityData(diana, entity);
 	c = diana->components + component;
 
 	if(c->flags & DL_COMPONENT_MULTIPLE_BIT) {
