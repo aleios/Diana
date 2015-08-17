@@ -360,7 +360,7 @@ static int _strdup(struct diana *diana, const char *s, char ** r) {
 		return DL_ERROR_NONE;
 	}
 	l = strlen(s);
-	*r = diana->malloc(l + 1);
+	*r = (char*)diana->malloc(l + 1);
 	if(*r == NULL) {
 		return DL_ERROR_OUT_OF_MEMORY;
 	}
@@ -392,7 +392,7 @@ static int _realloc(struct diana *diana, void *ptr, size_t oldSize, size_t newSi
 }
 
 int allocate_diana(void *(*malloc)(size_t), void (*free)(void *), struct diana ** r) {
-	*r = malloc(sizeof(**r));
+	*r = (diana*)malloc(sizeof(**r));
 	if(*r == NULL) {
 		return DL_ERROR_OUT_OF_MEMORY;
 	}
@@ -681,9 +681,9 @@ int diana_createManager(
 // RUNTIME
 static unsigned char *_getEntityData(struct diana *diana, unsigned int entity) {
 	if(entity >= diana->dataHeightCapacity) {
-		return diana->processingData[entity - diana->dataHeightCapacity];
+		return (unsigned char*)diana->processingData[entity - diana->dataHeightCapacity];
 	}
-	return (void *)((unsigned char *)diana->data + (diana->dataWidth * entity));
+	return ((unsigned char *)diana->data + (diana->dataWidth * entity));
 }
 
 static void _subscribe(struct diana *diana, struct _system *system, unsigned int entity) {

@@ -47,7 +47,7 @@ void Entity::disable() {
 	diana_signal(_world->getDiana(), _id, DL_ENTITY_DISABLED);
 }
 
-void Entity::_delete() {
+void Entity::remove() {
 	diana_signal(_world->getDiana(), _id, DL_ENTITY_DELETED);
 }
 

@@ -3,13 +3,25 @@
 #include "diana.hpp"
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <thread>
 
 using namespace Diana;
 
 class Position : public Component {
 public:
 	float x, y;
+};
+
+class Joint : public Component {
+public:
+    Joint(int x = 0)
+        : id(x)
+    {
+    }
+
+    int id;
+
+    virtual unsigned int componentFlags() const { return DL_COMPONENT_FLAG_MULTIPLE; }
 };
 
 class Velocity : public Component {
@@ -29,12 +41,12 @@ class MovementSystem : public System {
 public:
 	MovementSystem() : System("Render System") { }
 
-	virtual void addWatches() {
+	virtual void addWatches() final {
 		watch<Position>();
 		watch<Velocity>();
 	}
 
-	virtual void process(Entity & entity, float delta) {
+	virtual void process(Entity & entity, float delta) final {
 		Position * position = entity.getComponent<Position>();
 		Velocity * velocity = entity.getComponent<Velocity>();
 
@@ -49,17 +61,39 @@ class RenderSystem : public System {
 public:
 	RenderSystem() : System("Render System") { }
 
-	virtual void addWatches() {
+	virtual void addWatches() final {
 		watch<Position>();
 		watch<Renderer>();
+        watch<Joint>();
 	}
 
-	virtual void process(Entity & entity, float delta) {
+	virtual void process(Entity & entity, float delta) final {
 		Position * position = entity.getComponent<Position>();
 		Renderer * renderer = entity.getComponent<Renderer>();
 
-		printf("%i rendered at (%f,%f,%c)\n", entity.getId(), position->x, position->y, renderer->c);
+        Joint* j = entity.getComponent<Joint>(0);
+        Joint* j2 = entity.getComponent<Joint>(1);
+
+        printf("%i has joints with IDs: (%i, %i)\n", entity.getId(), j->id, j2->id);
 	}
+};
+
+class EntitySpawnManager
+    : public Diana::Manager
+{
+public:
+    EntitySpawnManager()
+        : Diana::Manager("SpawnManager")
+    {
+    }
+
+    virtual void added(Entity &entity) final {
+        printf("Entity spawned with ID: %i\n", entity.getId());
+    }
+
+    virtual void deleted(Entity &entity) final { 
+        printf("Entity deleted with ID: %i\n", entity.getId());
+    }
 };
 
 int main() {
@@ -68,22 +102,27 @@ int main() {
 	world->registerSystem(new MovementSystem());
 	world->registerSystem(new RenderSystem());
 
+    world->registerManager(new EntitySpawnManager());
+
 	world->initialize();
 
 	Entity e = world->spawn();
-	e.setComponent<Position>();
-	e.setComponent(Velocity(1.5, 0));
+	e.addComponent<Position>();
+	e.addComponent(Velocity(1.5, 0));
 	e.add();
 
 	Entity e1 = world->spawn();
-	e1.setComponent<Position>();
-	e1.setComponent<Renderer>();
+	e1.addComponent<Position>();
+	e1.addComponent<Renderer>();
+    e1.addComponent<Joint>();
+    e1.addComponent<Joint>(1);
 	e1.add();
 
 	while(1) {
 		// 30 fps
 		world->process(1.0/30.0);
-		sleep(1);
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
 }
 

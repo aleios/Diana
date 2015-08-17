@@ -6,6 +6,7 @@
 #include <typeinfo>
 #include <string>
 #include <cstdlib>
+#include <cassert>
 
 namespace Diana {
 
@@ -71,6 +72,17 @@ public:
 		setComponent(&data);
 	}
 
+    template<class T>
+    void addComponent(const T * data = NULL) {
+        unsigned int cid = _world->getComponentId<T>();
+        diana_appendComponent(_world->getDiana(), _id, cid, data);
+    }
+
+    template<class T>
+    void addComponent(const T & data) {
+        addComponent(&data);
+    }
+
 	template<class T>
 	T *getComponent() {
 		unsigned int cid = _world->getComponentId<T>();
@@ -79,10 +91,48 @@ public:
 		return ptr;
 	}
 
+    template<class T>
+    T *getComponent(unsigned int index) {
+        unsigned int cid = _world->getComponentId<T>();
+        T * ptr;
+
+        unsigned int count = 0;
+        diana_getComponentCount(_world->getDiana(), _id, cid, &count);
+        assert(index < count);
+
+        diana_getComponentI(_world->getDiana(), _id, cid, index, (void **)&ptr);
+        return ptr;
+    }
+
+    template<class T>
+    unsigned int getComponentCount() {
+        unsigned int cid = _world->getComponentId<T>();
+        unsigned int count = 0;
+        diana_getComponentCount(_world->getDiana(), _id, cid, &count);
+        return count;
+    }
+
+    template<class T>
+    void removeComponent() {
+        unsigned int cid = _world->getComponentId<T>();
+        diana_removeComponents(_world->getDiana(), _id, cid);
+    }
+
+    template<class T>
+    void removeComponent(unsigned int index) {
+        unsigned int cid = _world->getComponentId<T>();
+        
+        unsigned int count = 0;
+        diana_getComponentCount(_world->getDiana(), _id, cid, &count);
+        assert(index < count);
+        
+        diana_removeComponentI(_world->getDiana(), _id, cid, index);
+    }
+
 	void add();
 	void enable();
 	void disable();
-	void _delete();
+	void remove();
 
 	unsigned int getId() { return _id; }
 
